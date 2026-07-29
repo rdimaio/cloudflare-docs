@@ -66,7 +66,7 @@ const getUrl = await getSignedUrl(
 // https://my-bucket.<ACCOUNT_ID>.r2.cloudflarestorage.com/image.png?X-Amz-Algorithm=...
 
 // Generate presigned URL for writing (PUT)
-// Specify ContentType to restrict uploads to a specific file type
+// Require the client to send Content-Type: image/png
 const putUrl = await getSignedUrl(
 	S3,
 	new PutObjectCommand({
@@ -103,7 +103,7 @@ get_url = s3.generate_presigned_url(
 # https://my-bucket.<ACCOUNT_ID>.r2.cloudflarestorage.com/image.png?X-Amz-Algorithm=...
 
 # Generate presigned URL for writing (PUT)
-# Specify ContentType to restrict uploads to a specific file type
+# Require the client to send Content-Type: image/png
 put_url = s3.generate_presigned_url(
 	'put_object',
 	Params={
@@ -146,8 +146,9 @@ For complete examples and additional operations, refer to the SDK-specific docum
 
 When generating presigned URLs, you can limit abuse and misuse by:
 
-- **Restricting Content-Type**: Specify the allowed `Content-Type` in your SDK's parameters. The signature will include this header, so uploads will fail with a `403/SignatureDoesNotMatch` error if the client sends a different `Content-Type` for an upload request.
-- **Configuring CORS**: If your presigned URLs will be used from a browser, set up [CORS rules](/r2/buckets/cors/#use-cors-with-a-presigned-url) on your bucket to control which origins can make requests.
+- **Signing `Content-Type`**: Specify the expected `Content-Type` in your SDK's parameters. The signature will include this header, so uploads will fail with a `403/SignatureDoesNotMatch` error if the client sends a different value. This verifies only the declared header. It does not inspect the uploaded bytes or verify the file type.
+- **Validating uploaded objects**: Keep untrusted objects private. Validate the object's size and inspect its contents before making it available or processing it. For additional recommendations, refer to the [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html).
+- **Configuring CORS**: If your presigned URLs will be used from a browser, set up [CORS rules](/r2/buckets/cors/#use-cors-with-a-presigned-url) on your bucket to control which browser origins can make requests.
 
 ## Using a presigned URL
 
@@ -159,6 +160,7 @@ curl "https://my-bucket.<ACCOUNT_ID>.r2.cloudflarestorage.com/image.png?X-Amz-Al
 
 # Upload using a PUT presigned URL
 curl -X PUT "https://my-bucket.<ACCOUNT_ID>.r2.cloudflarestorage.com/image.png?X-Amz-Algorithm=..." \
+  -H "Content-Type: image/png" \
   --data-binary @image.png
 ```
 
@@ -199,6 +201,8 @@ R2 supports presigned URLs for the following HTTP methods:
 ## Security considerations
 
 Treat presigned URLs as bearer tokens. Anyone with the URL can perform the specified operation until it expires. Share presigned URLs only with intended recipients and consider using short expiration times for sensitive operations.
+
+A signed `Content-Type` verifies only that the request contains the expected header value. It does not validate the uploaded object's contents. Keep untrusted objects private until you validate their size and inspect their contents.
 
 ## Custom domains
 

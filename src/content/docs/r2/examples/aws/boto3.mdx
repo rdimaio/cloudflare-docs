@@ -156,13 +156,13 @@ curl -X PUT "https://<ACCOUNT_ID>.r2.cloudflarestorage.com/my-bucket/dog.png?X-A
   --data-binary @dog.png
 ```
 
-## Restrict uploads with CORS and Content-Type
+## Require Content-Type for browser uploads
 
-When generating presigned URLs for uploads, you can limit abuse and misuse by:
+For browser uploads, you can require a declared content type and limit which browser origins may make requests:
 
-1. **Restricting Content-Type**: Specify the allowed content type in the presigned URL parameters. The upload will fail if the client sends a different `Content-Type` header.
+1. **Signing `Content-Type`**: Specify the expected content type in the presigned URL parameters. The upload will fail if the client sends a different `Content-Type` header.
 
-2. **Configuring CORS**: Set up [CORS rules](/r2/buckets/cors/#add-cors-policies-from-the-dashboard) on your bucket to control which origins can upload files. Configure CORS via the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview) by adding a JSON policy to your bucket settings:
+2. **Configuring CORS**: Set up [CORS rules](/r2/buckets/cors/#add-cors-policies-from-the-dashboard) on your bucket to control which browser origins can upload files. Configure CORS via the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview) by adding a JSON policy to your bucket settings:
 
 ```json
 [
@@ -176,7 +176,7 @@ When generating presigned URLs for uploads, you can limit abuse and misuse by:
 ]
 ```
 
-Then generate a presigned URL with a Content-Type restriction:
+Then generate a presigned URL with a `Content-Type` requirement:
 
 ```python
 put_url = s3.generate_presigned_url(
@@ -192,5 +192,7 @@ put_url = s3.generate_presigned_url(
 
 When a client uses this presigned URL, they must:
 
-- Make the request from an allowed origin (enforced by CORS)
+- Make the request from an allowed browser origin (enforced by browser CORS)
 - Include the `Content-Type: image/png` header (enforced by the signature)
+
+The signature verifies only the `Content-Type` header. It does not inspect uploaded bytes or verify the file type. Keep untrusted objects private until you validate their size and inspect their contents. For more information, refer to [Presigned URL security considerations](/r2/api/s3/presigned-urls/#security-considerations).
